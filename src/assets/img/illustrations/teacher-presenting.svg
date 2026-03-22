@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 400">
+  <!-- Whiteboard -->
+  <rect x="60" y="60" width="200" height="150" rx="8" fill="rgba(255,255,255,0.15)"/>
+  <rect x="70" y="70" width="180" height="130" rx="4" fill="rgba(255,255,255,0.08)"/>
+
+  <!-- Whiteboard content -->
+  <rect x="85" y="85" width="80" height="5" rx="2" fill="rgba(255,255,255,0.3)"/>
+  <rect x="85" y="100" width="60" height="4" rx="2" fill="rgba(255,255,255,0.2)"/>
+  <rect x="85" y="112" width="70" height="4" rx="2" fill="rgba(255,255,255,0.2)"/>
+
+  <!-- Chart bars on whiteboard -->
+  <rect x="85" y="160" width="15" height="25" rx="3" fill="rgba(255,255,255,0.25)"/>
+  <rect x="108" y="145" width="15" height="40" rx="3" fill="rgba(255,255,255,0.3)"/>
+  <rect x="131" y="135" width="15" height="50" rx="3" fill="rgba(255,255,255,0.35)"/>
+  <rect x="154" y="125" width="15" height="60" rx="3" fill="rgba(255,255,255,0.4)"/>
+
+  <!-- Checkmark on board -->
+  <path d="M195 90 L205 100 L225 75" stroke="rgba(255,255,255,0.4)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Body -->
+  <rect x="310" y="180" width="95" height="130" rx="22" fill="#e8a87c"/>
+  <rect x="310" y="200" width="95" height="110" rx="22" fill="#5e72e4"/>
+
+  <!-- Head -->
+  <circle cx="358" cy="155" r="48" fill="#f4c28f"/>
+
+  <!-- Hair -->
+  <path d="M310 148 Q310 100 358 95 Q406 100 406 148 Q406 130 390 125 Q370 118 358 122 Q346 118 326 125 Q310 130 310 148Z" fill="#2d3748"/>
+  <path d="M310 155 Q305 140 312 128" stroke="#2d3748" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M406 155 Q411 140 404 128" stroke="#2d3748" stroke-width="10" fill="none" stroke-linecap="round"/>
+
+  <!-- Eyes -->
+  <circle cx="342" cy="150" r="5" fill="#333"/>
+  <circle cx="374" cy="150" r="5" fill="#333"/>
+  <circle cx="344" cy="148" r="2" fill="white"/>
+  <circle cx="376" cy="148" r="2" fill="white"/>
+
+  <!-- Smile -->
+  <path d="M345 170 Q358 182 371 170" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Earrings -->
+  <circle cx="310" cy="160" r="4" fill="#f6e05e"/>
+  <circle cx="406" cy="160" r="4" fill="#f6e05e"/>
+
+  <!-- Arm pointing to board -->
+  <path d="M310 230 Q270 210 260 195" stroke="#f4c28f" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <!-- Hand pointer -->
+  <circle cx="258" cy="192" r="8" fill="#f4c28f"/>
+
+  <!-- Other arm -->
+  <path d="M405 240 Q430 270 420 300" stroke="#f4c28f" stroke-width="16" fill="none" stroke-linecap="round"/>
+
+  <!-- Book in hand -->
+  <rect x="408" y="290" width="40" height="55" rx="4" fill="#e53e3e"/>
+  <rect x="413" y="296" width="30" height="4" rx="2" fill="rgba(255,255,255,0.4)"/>
+  <rect x="413" y="306" width="25" height="3" rx="2" fill="rgba(255,255,255,0.3)"/>
+
+  <!-- Skirt -->
+  <path d="M310 310 Q305 370 290 380 L426 380 Q411 370 405 310Z" fill="#4a5568"/>
+
+  <!-- Legs -->
+  <rect x="330" y="360" width="16" height="30" rx="8" fill="#f4c28f"/>
+  <rect x="370" y="360" width="16" height="30" rx="8" fill="#f4c28f"/>
+
+  <!-- Shoes -->
+  <ellipse cx="338" cy="392" rx="16" ry="8" fill="#e53e3e"/>
+  <ellipse cx="378" cy="392" rx="16" ry="8" fill="#e53e3e"/>
+
+  <!-- Decoration stars -->
+  <text x="140" y="50" font-size="18" fill="rgba(255,255,255,0.2)">✦</text>
+  <text x="450" y="130" font-size="14" fill="rgba(255,255,255,0.15)">✦</text>
+  <text x="80" y="250" font-size="12" fill="rgba(255,255,255,0.12)">✦</text>
+</svg>

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx vue-cli-service:*)",
+      "Bash(curl:*)",
+      "Bash(where psql:*)",
+      "Read(//c/Program Files/**)",
+      "Bash(netstat -ano)",
+      "Bash(python3 -c \"import sys,json; print\\(''''no python''''\\)\")",
+      "Bash(npm install:*)",
+      "Bash(node fix-passwords.js)"
+    ]
+  }
+}
