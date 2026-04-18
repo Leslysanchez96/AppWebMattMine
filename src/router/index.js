@@ -72,12 +72,14 @@ const routes = [
     path: "/virtual-reality",
     name: "Virtual Reality",
     component: VirtualReality,
+
     meta: { requiresAuth: true },
   },
   {
     path: "/rtl-page",
     name: "RTL",
     component: RTL,
+
     meta: { requiresAuth: true },
   },
   {

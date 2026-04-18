@@ -1,3 +1,4 @@
+
 <script setup>
 import { computed, onMounted } from "vue";
 import { useStore } from "vuex";
@@ -12,6 +13,7 @@ const store = useStore();
 onMounted(() => {
   store.dispatch("auth/checkAuth");
 });
+
 const isNavFixed = computed(() => store.state.isNavFixed);
 const darkMode = computed(() => store.state.darkMode);
 const isAbsolute = computed(() => store.state.isAbsolute);
@@ -20,8 +22,10 @@ const layout = computed(() => store.state.layout);
 const showNavbar = computed(() => store.state.showNavbar);
 const showFooter = computed(() => store.state.showFooter);
 
+
 // HU04: Timer de inactividad
 const { showWarning, secondsRemaining, continueSession, forceLogout } = useInactivityTimer();
+
 
 const navClasses = computed(() => {
   return {
@@ -45,11 +49,13 @@ const navClasses = computed(() => {
   <main
     class="main-content position-relative max-height-vh-100 h-100 border-radius-lg"
   >
+
     <navbar :class="[navClasses]" v-if="showNavbar" />
 
     <router-view />
 
     <app-footer v-show="showFooter" />
+
   </main>
 
   <!-- HU04: Modal de advertencia por inactividad -->
@@ -99,3 +105,4 @@ const navClasses = computed(() => {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 </style>
+

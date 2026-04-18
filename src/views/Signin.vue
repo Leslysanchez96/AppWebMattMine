@@ -341,6 +341,7 @@ onBeforeUnmount(() => {
 
 .btn-custom-gold:active:not(:disabled),
 .btn-custom-gold:focus:not(:disabled) {
+
   background: linear-gradient(135deg, #001D39 0%, #0A4174 100%) !important;
   transform: translateY(0);
 }
@@ -721,6 +722,7 @@ onBeforeUnmount(() => {
 
           <p><strong>1. TÉRMINOS DE USO</strong></p>
           <p>
+
             La utilización del sitio web (página web de la plataforma virtual MattLearn ), propiedad de (propietario del sitio web o plataforma) (en adelante EL PRESTATARIO), es absolutamente voluntaria y supone la aceptación plena por quien accede al mismo (en adelante EL USUARIO) de todas las Condiciones Generales de Uso vigentes en cada momento que se encuentre en el dominio (denominación del dominio web); por lo cual EL USUARIO deberá leer detenidamente y aceptar sin ningún tipo de reservas la presente declaración de TÉRMINOS Y CONDICIONES antes de realizar cualquier tipo de operación, visionado, utilización, etc., dentro de este sitio web.
           </p>
           <ol type="a">

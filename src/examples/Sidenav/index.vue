@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useStore } from "vuex";
 import SidenavList from "./SidenavList.vue";
+
 import logo from "@/assets/img/IconoColegio.png";
 import logoWhite from "@/assets/img/IconoColegio.png";
 

@@ -2,7 +2,6 @@
 import { computed, ref } from "vue";
 import { useStore } from "vuex";
 
-
 const showMenu = ref(false);
 const showUserMenu = ref(false);
 const store = useStore();

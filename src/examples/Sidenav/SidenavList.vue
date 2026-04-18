@@ -47,7 +47,6 @@ const dashboardRoute = computed(() => {
           </template>
         </sidenav-item>
       </li>
-
       <!-- ═══ MENÚ ALUMNO ═══ -->
       <template v-if="rol === 'Estudiante'">
         <li class="mt-3 nav-item">
