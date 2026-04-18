@@ -4,6 +4,7 @@ import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 import ArgonButton from "@/components/ArgonButton.vue";
 import loginBg from "@/assets/img/login-school.jpg";
+import authService from "@/services/auth.service";
 const body = document.getElementsByTagName("body")[0];
 const formCard = ref(null);
 const mouseX = ref(0);
@@ -47,23 +48,11 @@ const handleRecoveryEmail = async () => {
   recoveryLoading.value = true;
 
   try {
-    const response = await fetch("http://localhost:3000/api/recuperar-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ correo: recoveryEmail.value }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      recoveryError.value = data.error;
-      return;
-    }
-
+    await authService.recuperarPassword(recoveryEmail.value);
     maskedEmail.value = maskEmail(recoveryEmail.value);
     emailSent.value = true;
   } catch (err) {
-    recoveryError.value = "No se pudo conectar con el servidor.";
+    recoveryError.value = err.response?.data?.error || "No se pudo conectar con el servidor.";
   } finally {
     recoveryLoading.value = false;
   }
@@ -88,31 +77,21 @@ const placeholderText = computed(() => {
 const router = useRouter();
 const loginError = ref("");
 const isLoading = ref(false);
+const showBlockedModal = ref(false);
+const blockedIntentosInfo = ref(3);
 
 const handleLogin = async () => {
   loginError.value = "";
   isLoading.value = true;
 
   try {
-    const response = await fetch("http://localhost:3000/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        codigo: documentNumber.value,
-        password: password.value,
-        rol: selectedRole.value,
-      }),
+    const data = await store.dispatch("auth/login", {
+      codigo: documentNumber.value,
+      password: password.value,
+      rol: selectedRole.value,
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      loginError.value = data.error;
-      return;
-    }
-
-    // Login exitoso
-    localStorage.setItem("usuario", JSON.stringify(data.usuario));
+    // Redirigir según rol
     const rol = data.usuario.rol;
     if (rol === "Estudiante") {
       router.push("/dashboard-alumno");
@@ -125,7 +104,16 @@ const handleLogin = async () => {
     }
 
   } catch (err) {
-    loginError.value = "No se pudo conectar con el servidor. Intenta de nuevo.";
+    const data = err.response?.data;
+    if (data?.bloqueado) {
+      blockedIntentosInfo.value = data.intentosFallidos || 3;
+      showBlockedModal.value = true;
+      loginError.value = "";
+    } else if (data?.intentosRestantes !== undefined && data.intentosRestantes <= 1) {
+      loginError.value = `Contraseña incorrecta. Te queda ${data.intentosRestantes} intento antes de que tu cuenta sea bloqueada.`;
+    } else {
+      loginError.value = data?.error || "No se pudo conectar con el servidor. Intenta de nuevo.";
+    }
   } finally {
     isLoading.value = false;
   }
@@ -529,7 +517,67 @@ onBeforeUnmount(() => {
     </div>
   </main>
 
+  <!-- Blocked Account Modal -->
+  <Teleport to="body">
+    <div v-if="showBlockedModal" class="modal-backdrop fade show" style="z-index: 1050;"></div>
+    <div v-if="showBlockedModal" class="modal fade show d-block" tabindex="-1" style="z-index: 1055;">
+      <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+        <div class="modal-content" style="border: none; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+          <div class="modal-body px-4 pt-4 pb-4">
+            <!-- Header con icono -->
+            <div class="text-center mb-3">
+              <div style="width: 72px; height: 72px; background: #fef2f2; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 12px;">
+                <span style="font-size: 36px;">🔒</span>
+              </div>
+              <h4 class="mb-1" style="color: #001D39; font-weight: 800; font-size: 1.3rem;">Cuenta Bloqueada</h4>
+              <p class="text-muted mb-0" style="font-size: 0.9rem;">Has excedido el número de intentos permitidos</p>
+            </div>
+            <!-- Warning box -->
+            <div class="d-flex align-items-start p-3 mb-3" style="background: #fef2f2; border-radius: 12px; border: 1px solid #fca5a5;">
+              <span style="font-size: 1.3rem; margin-right: 10px;">⚠️</span>
+              <p class="mb-0" style="color: #991b1b; font-size: 0.85rem; line-height: 1.5;">
+                <strong>{{ blockedIntentosInfo }} intentos fallidos registrados.</strong><br>
+                Tu cuenta ha sido bloqueada temporalmente por <strong>15 minutos</strong>.
+              </p>
+            </div>
+
+            <!-- Instrucciones -->
+            <div class="p-3 mb-3" style="background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <p class="mb-2" style="color: #001D39; font-weight: 700; font-size: 0.9rem;">¿Cómo desbloquear tu cuenta?</p>
+              <ol class="mb-0 ps-3" style="color: #475569; font-size: 0.85rem; line-height: 1.8;">
+                <li>Espera 15 minutos y vuelve a intentar</li>
+                <li v-if="selectedRole === 'Docente'">Usa la opción "Recuperar contraseña" por correo</li>
+                <li v-else>Usa la opción "Recuperar contraseña" con tu pregunta de seguridad</li>
+              </ol>
+            </div>
+
+            <!-- Botón Recuperar -->
+            <button
+              type="button"
+              class="btn w-100 text-white mb-2"
+              style="background: linear-gradient(135deg, #0A4174, #4E8EA2); border: none; border-radius: 12px; padding: 14px; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 15px rgba(10,65,116,0.3);"
+              @click="showBlockedModal = false; showResetModal = true;"
+            >
+              Recuperar Contraseña
+            </button>
+
+            <!-- Botón secundario -->
+            <button
+              type="button"
+              class="btn btn-outline-secondary w-100"
+              style="border-radius: 12px; padding: 12px; font-weight: 600; font-size: 0.9rem;"
+              @click="showBlockedModal = false"
+            >
+              Volver al inicio
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
   <!-- Reset Password Modal -->
+  <Teleport to="body">
   <div v-if="showResetModal" class="modal-backdrop fade show" @click="closeResetModal"></div>
   <div
     v-if="showResetModal"
@@ -639,7 +687,9 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </div>
+  </Teleport>
   <!-- Terms Modal -->
+  <Teleport to="body">
   <div v-if="showTermsModal" class="modal-backdrop fade show" @click="showTermsModal = false"></div>
   <div
     v-if="showTermsModal"
@@ -751,8 +801,10 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </div>
+  </Teleport>
 
   <!-- Privacy Policy Modal -->
+  <Teleport to="body">
   <div v-if="showPrivacyModal" class="modal-backdrop fade show" @click="showPrivacyModal = false"></div>
   <div
     v-if="showPrivacyModal"
@@ -820,4 +872,5 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </div>
+  </Teleport>
 </template>

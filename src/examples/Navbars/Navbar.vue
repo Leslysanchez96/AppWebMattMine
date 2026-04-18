@@ -1,11 +1,11 @@
 <script setup>
 import { computed, ref } from "vue";
 import { useStore } from "vuex";
-import { useRouter } from "vue-router";
+
 
 const showMenu = ref(false);
+const showUserMenu = ref(false);
 const store = useStore();
-const router = useRouter();
 const darkMode = computed(() => store.state.darkMode);
 
 const minimizeSidebar = () => store.commit("sidebarMinimize");
@@ -17,24 +17,15 @@ const closeMenu = () => {
   }, 100);
 };
 
-const usuario = computed(() => {
-  try {
-    return JSON.parse(localStorage.getItem("usuario")) || {};
-  } catch {
-    return {};
-  }
-});
+const closeUserMenu = () => {
+  setTimeout(() => {
+    showUserMenu.value = false;
+  }, 100);
+};
 
-const userName = computed(() => {
-  const u = usuario.value;
-  if (u.nombres && u.apellido) return `${u.nombres} ${u.apellido}`;
-  if (u.nombres) return u.nombres;
-  return "Usuario";
-});
-
+const userName = computed(() => store.getters["auth/userName"] || "Usuario");
 const userInitial = computed(() => userName.value.charAt(0).toUpperCase());
-
-const userRole = computed(() => usuario.value.rol || "");
+const userRole = computed(() => store.getters["auth/userRole"] || "");
 
 const roleColor = computed(() => {
   const colors = {
@@ -46,8 +37,7 @@ const roleColor = computed(() => {
 });
 
 const handleLogout = () => {
-  localStorage.removeItem("usuario");
-  router.push("/signin");
+  store.dispatch("auth/logout");
 };
 </script>
 <template>
@@ -75,21 +65,11 @@ const handleLogout = () => {
 
       <!-- Right icons -->
       <div class="d-flex align-items-center">
-        <!-- Sidebar toggle (mobile) -->
+        <!-- Sidebar toggle -->
         <a
           href="#"
           @click.prevent="minimizeSidebar"
-          class="nav-link p-0 d-xl-none me-3"
-          :class="darkMode ? 'text-white' : 'text-body'"
-        >
-          <i class="fas fa-bars" style="font-size: 1.1rem;"></i>
-        </a>
-
-        <!-- Hamburger (desktop) -->
-        <a
-          href="#"
-          @click.prevent="minimizeSidebar"
-          class="nav-link p-0 d-none d-xl-block me-3"
+          class="nav-link p-0 me-3"
           :class="darkMode ? 'text-white' : 'text-body'"
         >
           <i class="fas fa-bars" style="font-size: 1.1rem;"></i>
@@ -102,9 +82,8 @@ const handleLogout = () => {
             class="nav-link p-0 position-relative"
             :class="darkMode ? 'text-white' : 'text-body'"
             id="dropdownMenuButton"
-            data-bs-toggle="dropdown"
             aria-expanded="false"
-            @click="showMenu = !showMenu"
+            @click.prevent="showMenu = !showMenu"
             @blur="closeMenu"
           >
             <i class="fas fa-bell" style="font-size: 1.1rem;"></i>
@@ -113,8 +92,8 @@ const handleLogout = () => {
             </span>
           </a>
           <ul
-            class="px-2 py-3 dropdown-menu dropdown-menu-end me-sm-n4"
-            :class="showMenu ? 'show' : ''"
+            v-if="showMenu"
+            class="px-2 py-3 dropdown-menu dropdown-menu-end me-sm-n4 show"
             aria-labelledby="dropdownMenuButton"
           >
             <li class="mb-2">
@@ -193,10 +172,11 @@ const handleLogout = () => {
         <div class="dropdown">
           <a
             href="#"
-            class="d-flex align-items-center text-decoration-none dropdown-toggle"
+            class="d-flex align-items-center text-decoration-none"
             id="userDropdown"
-            data-bs-toggle="dropdown"
             aria-expanded="false"
+            @click.prevent="showUserMenu = !showUserMenu"
+            @blur="closeUserMenu"
             style="cursor: pointer;"
           >
             <div
@@ -207,7 +187,7 @@ const handleLogout = () => {
               {{ userInitial }}
             </div>
           </a>
-          <ul class="dropdown-menu dropdown-menu-end py-2" aria-labelledby="userDropdown">
+          <ul v-if="showUserMenu" class="dropdown-menu dropdown-menu-end py-2 show" aria-labelledby="userDropdown">
             <li class="px-3 py-2 border-bottom">
               <h6 class="text-sm mb-0">{{ userName }}</h6>
               <p class="text-xs text-muted mb-0">{{ userRole }}</p>
@@ -250,5 +230,29 @@ const handleLogout = () => {
 
 .navbar .nav-link:hover {
   opacity: 0.8;
+}
+</style>
+
+<style>
+#navbarBlur .dropdown .dropdown-menu::before {
+  display: none !important;
+}
+#navbarBlur .dropdown:not(.dropdown-hover) .dropdown-menu {
+  margin-top: 4px !important;
+}
+
+/* Notificaciones responsive en móvil */
+@media (max-width: 767px) {
+  #navbarBlur .dropdown .dropdown-menu {
+    position: fixed !important;
+    top: 60px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    right: auto !important;
+    width: 90vw !important;
+    max-width: 360px !important;
+    margin-top: 0 !important;
+    z-index: 1050 !important;
+  }
 }
 </style>

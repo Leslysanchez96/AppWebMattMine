@@ -12,15 +12,10 @@ const sidebarType = computed(() => store.state.sidebarType);
 const darkMode = computed(() => store.state.darkMode);
 
 const dashboardRoute = computed(() => {
-  try {
-    const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
-    const rol = usuario.rol || "";
-    if (rol === "Estudiante") return "/dashboard-alumno";
-    if (rol === "Docente") return "/dashboard-docente";
-    if (rol === "Administrador") return "/dashboard-admin";
-  } catch (e) {
-    void e;
-  }
+  const rol = store.getters["auth/userRole"];
+  if (rol === "Estudiante") return "/dashboard-alumno";
+  if (rol === "Docente") return "/dashboard-docente";
+  if (rol === "Administrador") return "/dashboard-admin";
   return "/dashboard-default";
 });
 </script>
@@ -46,10 +41,10 @@ const dashboardRoute = computed(() => {
         id="iconSidenav"
       ></i>
 
-      <router-link class="m-0 navbar-brand" :to="dashboardRoute">
+      <router-link class="m-0 navbar-brand brand-link" :to="dashboardRoute">
         <img
           :src="darkMode || sidebarType === 'bg-default' ? logoWhite : logo"
-          class="navbar-brand-img h-100"
+          class="navbar-brand-img"
           alt="main_logo"
         />
 
@@ -62,3 +57,17 @@ const dashboardRoute = computed(() => {
     <sidenav-list />
   </aside>
 </template>
+
+<style>
+#sidenav-main .sidenav-header {
+  height: auto !important;
+  display: flex !important;
+  align-items: center !important;
+}
+#sidenav-main .sidenav-header .navbar-brand {
+  display: flex !important;
+  align-items: center !important;
+  padding: 1.2rem 2rem !important;
+}
+
+</style>

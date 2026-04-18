@@ -3,6 +3,7 @@ import { onBeforeUnmount, onBeforeMount, ref, computed } from "vue";
 import { useStore } from "vuex";
 import { useRouter, useRoute } from "vue-router";
 import loginBg from "@/assets/img/login-school.jpg";
+import authService from "@/services/auth.service";
 
 const body = document.getElementsByTagName("body")[0];
 const store = useStore();
@@ -30,17 +31,11 @@ const verifyToken = async () => {
   }
 
   try {
-    const response = await fetch(`http://localhost:3000/api/verificar-token/${token.value}`);
-    const data = await response.json();
-
-    if (!response.ok) {
-      error.value = data.error;
-    } else {
-      tokenValid.value = true;
-      userName.value = data.nombres;
-    }
+    const data = await authService.verificarToken(token.value);
+    tokenValid.value = true;
+    userName.value = data.nombres;
   } catch (err) {
-    error.value = "No se pudo conectar con el servidor.";
+    error.value = err.response?.data?.error || "No se pudo conectar con el servidor.";
   } finally {
     checking.value = false;
   }
@@ -50,8 +45,16 @@ const handleReset = async () => {
   error.value = "";
   message.value = "";
 
-  if (newPassword.value.length < 8) {
-    error.value = "La contraseña debe tener al menos 8 caracteres.";
+  // Validar política de contraseñas (HU33)
+  const politicaErrores = [];
+  if (newPassword.value.length < 8) politicaErrores.push("mínimo 8 caracteres");
+  if (!/[A-Z]/.test(newPassword.value)) politicaErrores.push("una mayúscula");
+  if (!/[a-z]/.test(newPassword.value)) politicaErrores.push("una minúscula");
+  if (!/[0-9]/.test(newPassword.value)) politicaErrores.push("un número");
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(newPassword.value)) politicaErrores.push("un carácter especial");
+
+  if (politicaErrores.length > 0) {
+    error.value = `La contraseña debe contener: ${politicaErrores.join(", ")}.`;
     return;
   }
 
@@ -63,22 +66,11 @@ const handleReset = async () => {
   isLoading.value = true;
 
   try {
-    const response = await fetch("http://localhost:3000/api/reset-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token: token.value, newPassword: newPassword.value }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      error.value = data.error;
-    } else {
-      message.value = "Contraseña actualizada correctamente. Redirigiendo...";
-      setTimeout(() => router.push("/signin"), 2500);
-    }
+    await authService.resetPassword(token.value, newPassword.value);
+    message.value = "Contraseña actualizada correctamente. Redirigiendo...";
+    setTimeout(() => router.push("/signin"), 2500);
   } catch (err) {
-    error.value = "No se pudo conectar con el servidor.";
+    error.value = err.response?.data?.error || "No se pudo conectar con el servidor.";
   } finally {
     isLoading.value = false;
   }

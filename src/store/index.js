@@ -1,6 +1,12 @@
 import { createStore } from "vuex";
+import auth from "./modules/auth";
+import permisos from "./modules/permisos";
 
 export default createStore({
+  modules: {
+    auth,
+    permisos,
+  },
   state: {
     hideConfigButton: false,
     isPinned: false,
@@ -34,15 +40,20 @@ export default createStore({
       }
     },
     sidebarMinimize(state) {
-      let sidenav_show = document.querySelector("#app");
-      if (state.isPinned) {
-        sidenav_show.classList.add("g-sidenav-hidden");
-        sidenav_show.classList.remove("g-sidenav-pinned");
-        state.isPinned = false;
+      const app = document.querySelector("#app");
+      const isSmall = window.innerWidth < 1200;
+      if (isSmall) {
+        // En móvil/tablet: mostrar/ocultar con translateX via clases de Argon
+        if (state.isPinned) {
+          app.classList.remove("g-sidenav-pinned");
+          state.isPinned = false;
+        } else {
+          app.classList.add("g-sidenav-pinned");
+          state.isPinned = true;
+        }
       } else {
-        sidenav_show.classList.add("g-sidenav-pinned");
-        sidenav_show.classList.remove("g-sidenav-hidden");
-        state.isPinned = true;
+        // En desktop: mostrar/ocultar completamente
+        state.showSidenav = !state.showSidenav;
       }
     },
     sidebarType(state, payload) {

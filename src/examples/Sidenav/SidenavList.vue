@@ -1,12 +1,12 @@
 <script setup>
 import { computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
+import { useStore } from "vuex";
 import SidenavItem from "./SidenavItem.vue";
 
-const router = useRouter();
+const store = useStore();
 const handleLogout = () => {
-  localStorage.removeItem("usuario");
-  router.push("/signin");
+  store.dispatch("auth/logout");
 };
 
 const getRoute = () => {
@@ -15,15 +15,12 @@ const getRoute = () => {
   return routeArr[1];
 };
 
-const usuario = computed(() => {
-  try {
-    return JSON.parse(localStorage.getItem("usuario")) || {};
-  } catch {
-    return {};
-  }
-});
+const rol = computed(() => store.getters["auth/userRole"] || "");
 
-const rol = computed(() => usuario.value.rol || "");
+// Helper de permisos para mostrar/ocultar items del menú
+const tienePermiso = (modulo, accion) => {
+  return store.getters["permisos/tienePermiso"](modulo, accion);
+};
 
 const dashboardRoute = computed(() => {
   if (rol.value === "Estudiante") return "/dashboard-alumno";
@@ -91,6 +88,23 @@ const dashboardRoute = computed(() => {
             </template>
           </sidenav-item>
         </li>
+
+        <li class="mt-3 nav-item">
+          <h6 class="text-xs ps-4 text-uppercase font-weight-bolder opacity-6 ms-2">
+            PERSONALIZACIÓN
+          </h6>
+        </li>
+        <li class="nav-item">
+          <sidenav-item
+            to="/mis-preferencias"
+            :class="getRoute() === 'mis-preferencias' ? 'active' : ''"
+            navText="Mis Preferencias"
+          >
+            <template v-slot:icon>
+              <i class="fas fa-heart text-danger text-sm opacity-10"></i>
+            </template>
+          </sidenav-item>
+        </li>
       </template>
 
       <!-- ═══ MENÚ DOCENTE ═══ -->
@@ -136,6 +150,34 @@ const dashboardRoute = computed(() => {
 
         <li class="mt-3 nav-item">
           <h6 class="text-xs ps-4 text-uppercase font-weight-bolder opacity-6 ms-2">
+            CONTENIDOS
+          </h6>
+        </li>
+        <li class="nav-item">
+          <sidenav-item
+            to="/temas"
+            :class="getRoute() === 'temas' ? 'active' : ''"
+            navText="Temas"
+          >
+            <template v-slot:icon>
+              <i class="fas fa-list-ol text-primary text-sm opacity-10"></i>
+            </template>
+          </sidenav-item>
+        </li>
+        <li class="nav-item">
+          <sidenav-item
+            to="/materiales"
+            :class="getRoute() === 'materiales' ? 'active' : ''"
+            navText="Materiales"
+          >
+            <template v-slot:icon>
+              <i class="fas fa-folder-open text-info text-sm opacity-10"></i>
+            </template>
+          </sidenav-item>
+        </li>
+
+        <li class="mt-3 nav-item">
+          <h6 class="text-xs ps-4 text-uppercase font-weight-bolder opacity-6 ms-2">
             SEGUIMIENTO
           </h6>
         </li>
@@ -170,14 +212,47 @@ const dashboardRoute = computed(() => {
             ADMINISTRACIÓN
           </h6>
         </li>
-        <li class="nav-item">
+        <li class="nav-item" v-if="tienePermiso('usuarios', 'ver')">
           <sidenav-item
-            to="/usuarios"
-            :class="getRoute() === 'usuarios' ? 'active' : ''"
+            to="/admin/usuarios"
+            :class="$route.path === '/admin/usuarios' ? 'active' : ''"
             navText="Usuarios"
           >
             <template v-slot:icon>
               <i class="ni ni-single-02 text-primary text-sm opacity-10"></i>
+            </template>
+          </sidenav-item>
+        </li>
+        <li class="nav-item" v-if="tienePermiso('roles', 'ver')">
+          <sidenav-item
+            to="/admin/roles"
+            :class="$route.path === '/admin/roles' ? 'active' : ''"
+            navText="Roles y Permisos"
+          >
+            <template v-slot:icon>
+              <i class="ni ni-badge text-warning text-sm opacity-10"></i>
+            </template>
+          </sidenav-item>
+        </li>
+        <li class="nav-item" v-if="tienePermiso('auditoria', 'ver')">
+          <sidenav-item
+            to="/admin/auditoria"
+            :class="$route.path === '/admin/auditoria' ? 'active' : ''"
+            navText="Auditoría"
+          >
+            <template v-slot:icon>
+              <i class="ni ni-bullet-list-67 text-info text-sm opacity-10"></i>
+            </template>
+          </sidenav-item>
+        </li>
+        <li class="nav-item">
+          <sidenav-item
+            to="/admin/politicas-seguridad"
+            :class="$route.path === '/admin/politicas-seguridad' ? 'active' : ''"
+            navText="Políticas de Seguridad"
+          >
+            <template v-slot:icon>
+              <i class="fas fa-shield-alt text-danger text-sm opacity-10"></i>
             </template>
           </sidenav-item>
         </li>
@@ -194,12 +269,34 @@ const dashboardRoute = computed(() => {
         </li>
         <li class="nav-item">
           <sidenav-item
-            to="/cursos"
-            :class="getRoute() === 'cursos' ? 'active' : ''"
+            to="/admin/cursos"
+            :class="getRoute() === 'admin' && $route.path.includes('cursos') ? 'active' : ''"
             navText="Cursos"
           >
             <template v-slot:icon>
               <i class="ni ni-book-bookmark text-info text-sm opacity-10"></i>
+            </template>
+          </sidenav-item>
+        </li>
+        <li class="nav-item">
+          <sidenav-item
+            to="/temas"
+            :class="getRoute() === 'temas' ? 'active' : ''"
+            navText="Temas"
+          >
+            <template v-slot:icon>
+              <i class="fas fa-list-ol text-warning text-sm opacity-10"></i>
+            </template>
+          </sidenav-item>
+        </li>
+        <li class="nav-item">
+          <sidenav-item
+            to="/materiales"
+            :class="getRoute() === 'materiales' ? 'active' : ''"
+            navText="Materiales"
+          >
+            <template v-slot:icon>
+              <i class="fas fa-folder-open text-success text-sm opacity-10"></i>
             </template>
           </sidenav-item>
         </li>
@@ -258,6 +355,17 @@ const dashboardRoute = computed(() => {
         >
           <template v-slot:icon>
             <i class="ni ni-circle-08 text-dark text-sm opacity-10"></i>
+          </template>
+        </sidenav-item>
+      </li>
+      <li class="nav-item">
+        <sidenav-item
+          to="/cambiar-password"
+          :class="getRoute() === 'cambiar-password' ? 'active' : ''"
+          navText="Cambiar Contraseña"
+        >
+          <template v-slot:icon>
+            <i class="ni ni-lock-circle-open text-warning text-sm opacity-10"></i>
           </template>
         </sidenav-item>
       </li>

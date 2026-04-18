@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AppWebMattMine is an educational web application with AI capabilities for measuring primary math student performance. It consists of a Vue 3 frontend (Argon Dashboard template) and an Express.js backend connected to a PostgreSQL database ("BD-MattMine").
+AppWebMattLearn is an educational web application with AI capabilities for measuring primary math student performance. It consists of a Vue 3 frontend (Argon Dashboard template) and an Express.js backend connected to a PostgreSQL database ("BD-MattLearn").
 
 ## Commands
 
@@ -61,12 +61,12 @@ Includes performance indexes and seed data (preguntas de seguridad, curso Matem√
 
 ### Environment Variables (server/.env)
 ```
-PORT=3001
+PORT=3000
 DB_USER=postgres
 DB_PASSWORD=admin1234
 DB_HOST=localhost
 DB_PORT=5432
-DB_NAME=BD-MattMine
+DB_NAME=BD-AppIA
 ```
 
 ## Deployment
