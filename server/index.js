@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 
 // Importar rutas
 const authRoutes = require('./routes/auth.routes');
@@ -14,6 +14,9 @@ const politicaSeguridadRoutes = require('./routes/politicaSeguridad.routes');
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Capturar IP real cuando se corre detrás de proxies (Nginx, Cloudflare, Genezio, etc.)
+app.set('trust proxy', true);
 
 // Middleware global
 app.use(cors());
@@ -36,25 +39,10 @@ app.use('/api', contenidoRoutes);
 app.use('/api/permisos', permisoRoutes);
 app.use('/api/politica-seguridad', politicaSeguridadRoutes);
 
-// Ruta de prueba de conexión a BD (temporal)
-app.get('/api/test-db', async (req, res) => {
-    try {
-        const db = require('./db');
-        const result = await db.query('SELECT NOW()');
-        res.json({
-            message: 'Database connection successful',
-            timestamp: result.rows[0].now,
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({
-            error: 'Database connection failed',
-            details: err.message,
-        });
-    }
-});
-
 // Iniciar servidor
 app.listen(port, () => {
     console.log(`MattLearn API running on port ${port}`);
+    // Pre-cargar modelo NSFW (background, no bloquea)
+    require('./services/nsfw.service').cargarModelo()
+        .catch((err) => console.error('No se pudo precargar modelo NSFW:', err.message));
 });

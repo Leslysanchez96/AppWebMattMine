@@ -31,6 +31,11 @@ export default {
         return response.data;
     },
 
+    async desbloquear(id) {
+        const response = await api.put(`/usuarios/${id}/desbloquear`);
+        return response.data;
+    },
+
     async miCuenta() {
         const response = await api.get('/mi-cuenta');
         return response.data;

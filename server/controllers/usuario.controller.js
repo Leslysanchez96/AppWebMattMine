@@ -133,6 +133,24 @@ async function eliminar(req, res) {
     }
 }
 
+// PUT /api/usuarios/:id/desbloquear — Desbloquear cuenta y resetear intentos
+async function desbloquear(req, res) {
+    try {
+        const usuario = await usuarioModel.getById(req.params.id);
+        if (!usuario) {
+            return res.status(404).json({ error: 'Usuario no encontrado.' });
+        }
+        const resultado = await usuarioModel.desbloquearCuenta(req.params.id);
+        res.json({
+            message: 'Usuario desbloqueado correctamente.',
+            usuario: resultado,
+        });
+    } catch (err) {
+        console.error('Error al desbloquear usuario:', err);
+        res.status(500).json({ error: 'Error al desbloquear el usuario.' });
+    }
+}
+
 // PUT /api/usuarios/:id/rol — Asignar rol (HU05)
 async function asignarRol(req, res) {
     const { rol } = req.body;
@@ -189,6 +207,7 @@ module.exports = {
     actualizar,
     eliminar,
     asignarRol,
+    desbloquear,
     miCuenta,
     estadisticas,
 };

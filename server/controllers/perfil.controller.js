@@ -1,4 +1,5 @@
 const perfilModel = require("../models/perfil.model");
+const nsfwService = require("../services/nsfw.service");
 const path = require("path");
 const fs = require("fs");
 
@@ -19,6 +20,26 @@ const subirAvatar = async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "No se envió ninguna imagen" });
     }
+
+    const archivoSubido = req.file.path;
+
+    // Validar contenido con NSFW
+    let validacion;
+    try {
+      validacion = await nsfwService.validar(archivoSubido);
+    } catch (err) {
+      console.error("Error en validación NSFW:", err);
+      // Si la validación falla técnicamente, eliminar archivo y rechazar
+      if (fs.existsSync(archivoSubido)) fs.unlinkSync(archivoSubido);
+      return res.status(500).json({ error: "No se pudo validar la imagen. Intenta de nuevo." });
+    }
+
+    if (!validacion.ok) {
+      // Eliminar archivo rechazado
+      if (fs.existsSync(archivoSubido)) fs.unlinkSync(archivoSubido);
+      return res.status(422).json({ error: validacion.motivo });
+    }
+
     const avatarPath = `/uploads/avatars/${req.file.filename}`;
 
     // Eliminar avatar anterior si existe

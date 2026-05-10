@@ -61,8 +61,46 @@ async function estadisticas(req, res) {
     }
 }
 
+// GET /api/auditoria/acciones-recientes
+async function accionesRecientes(req, res) {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+        const datos = await auditoriaModel.obtenerAccionesRecientes({ limit });
+        res.json(datos);
+    } catch (err) {
+        console.error('Error al obtener acciones recientes:', err);
+        res.status(500).json({ error: 'Error al obtener acciones recientes.' });
+    }
+}
+
+// GET /api/auditoria/ultimos-accesos
+async function ultimosAccesos(req, res) {
+    try {
+        const limit = parseInt(req.query.limit) || 50;
+        const datos = await auditoriaModel.obtenerUltimosAccesos({ limit });
+        res.json(datos);
+    } catch (err) {
+        console.error('Error al obtener últimos accesos:', err);
+        res.status(500).json({ error: 'Error al obtener últimos accesos.' });
+    }
+}
+
+// GET /api/auditoria/intentos-fallidos
+async function intentosFallidos(req, res) {
+    try {
+        const datos = await auditoriaModel.obtenerIntentosFallidos();
+        res.json(datos);
+    } catch (err) {
+        console.error('Error al obtener intentos fallidos:', err);
+        res.status(500).json({ error: 'Error al obtener intentos fallidos.' });
+    }
+}
+
 module.exports = {
     listar,
     exportar,
     estadisticas,
+    accionesRecientes,
+    intentosFallidos,
+    ultimosAccesos,
 };

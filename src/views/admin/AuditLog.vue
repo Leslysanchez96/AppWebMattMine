@@ -10,6 +10,9 @@
             <div class="glow-data">
               <span class="glow-num">{{ stats.accesosHoy }}</span>
               <span class="glow-label">Accesos Hoy</span>
+              <span class="glow-trend" :class="trendCls(tendencias.accesos)">
+                <i :class="trendIcon(tendencias.accesos)"></i> {{ trendTxt(tendencias.accesos) }} vs ayer
+              </span>
             </div>
           </div>
           <div class="glow-pulse"></div>
@@ -23,6 +26,9 @@
             <div class="glow-data">
               <span class="glow-num">{{ stats.usuariosActivos }}</span>
               <span class="glow-label">Activos (24h)</span>
+              <span class="glow-trend">
+                <i class="fas fa-circle pulse-dot"></i> {{ stats.conectadosAhora }} en línea ahora
+              </span>
             </div>
           </div>
           <div class="glow-pulse"></div>
@@ -36,6 +42,9 @@
             <div class="glow-data">
               <span class="glow-num">{{ stats.cuentasBloqueadas }}</span>
               <span class="glow-label">Bloqueadas</span>
+              <span class="glow-trend">
+                <i class="fas fa-exclamation-triangle"></i> {{ stats.intentosPendientes }} con intentos
+              </span>
             </div>
           </div>
           <div class="glow-pulse"></div>
@@ -49,6 +58,9 @@
             <div class="glow-data">
               <span class="glow-num">{{ totalRegistros }}</span>
               <span class="glow-label">Total Registros</span>
+              <span class="glow-trend">
+                <i class="fas fa-database"></i> Histórico completo
+              </span>
             </div>
           </div>
           <div class="glow-pulse"></div>
@@ -165,7 +177,7 @@
                     <span class="badge badge-sm" :class="getMetodoBadge(log.metodo)">{{ log.metodo }}</span>
                   </td>
                   <td class="align-middle text-center">
-                    <span class="text-xs font-monospace text-muted">{{ log.ip }}</span>
+                    <span class="text-xs font-monospace text-muted">{{ formatIP(log.ip) }}</span>
                   </td>
                 </tr>
                 <tr v-if="registros.length === 0 && !loading">
@@ -223,15 +235,193 @@
             </div>
           </div>
           <hr class="horizontal dark my-4">
-          <h6 class="text-sm mb-3">Últimos 7 Días</h6>
-          <div class="row">
-            <div class="col-lg-8">
-              <div v-for="(d, i) in resumenSemanal" :key="i" class="d-flex align-items-center mb-3">
-                <span class="text-sm text-muted me-3" style="width: 80px;">{{ formatDiaSemana(d.dia) }}</span>
-                <div class="progress flex-grow-1 me-3" style="height: 8px;">
-                  <div class="progress-bar bg-gradient-primary" :style="{ width: (d.total / maxSemanal * 100) + '%' }"></div>
+
+          <!-- 3 Detail Cards: Acciones Recientes | Intentos Fallidos | Resumen Semanal -->
+          <div class="row g-3">
+            <!-- Acciones Recientes (timeline) -->
+            <div class="col-lg-4">
+              <div class="detail-card h-100">
+                <div class="detail-card-header">
+                  <div class="d-flex align-items-center">
+                    <i class="fas fa-stream text-primary me-2"></i>
+                    <h6 class="mb-0">Acciones Recientes</h6>
+                  </div>
+                  <span class="badge bg-gradient-primary">{{ accionesRecientes.length }}</span>
                 </div>
-                <span class="text-sm font-weight-bold" style="width: 40px; text-align: right;">{{ d.total }}</span>
+                <div class="detail-card-body">
+                  <div v-if="accionesRecientes.length === 0" class="empty-state">
+                    <i class="fas fa-history"></i>
+                    <p class="mb-0">Sin actividad registrada todavía</p>
+                  </div>
+                  <ul v-else class="timeline">
+                    <li v-for="a in accionesRecientes" :key="a.id_auditoria" class="timeline-item">
+                      <span class="timeline-dot" :class="'bg-' + getRolColor(a.rol)"></span>
+                      <div class="timeline-content">
+                        <div class="d-flex justify-content-between align-items-start">
+                          <span class="text-xs font-weight-bold text-truncate" style="max-width: 70%;">{{ a.nombres }} {{ a.apellido }}</span>
+                          <span class="text-xxs text-muted" :title="formatFecha(a.fecha) + ' ' + formatHora(a.fecha)">{{ haceTiempo(a.fecha) }}</span>
+                        </div>
+                        <p class="text-xs mb-0 mt-1" style="line-height: 1.3;">
+                          <span class="badge badge-sm me-1" :class="getMetodoBadge(a.metodo)" style="font-size: 8px;">{{ a.metodo }}</span>
+                          {{ a.accion }}
+                        </p>
+                        <span class="text-xxs text-muted font-monospace">{{ a.codigo }} · {{ a.rol }}</span>
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- Intentos Fallidos / Bloqueados -->
+            <div class="col-lg-4">
+              <div class="detail-card h-100" style="border: 1px solid rgba(245,54,92,0.2);">
+                <div class="detail-card-header">
+                  <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                    <h6 class="mb-0 text-danger">Intentos Fallidos / Bloqueados</h6>
+                  </div>
+                  <span class="badge bg-gradient-danger">{{ intentosFallidos.length }}</span>
+                </div>
+                <div class="detail-card-body">
+                  <div v-if="intentosFallidos.length === 0" class="empty-state">
+                    <i class="fas fa-shield-alt"></i>
+                    <p class="mb-0">Todo en orden — sin intentos pendientes</p>
+                  </div>
+                  <div v-else>
+                    <div v-for="u in intentosFallidos" :key="u.id_usuario" class="alert-row">
+                      <span class="alert-icon"><i :class="u.estado === 'Bloqueado' ? 'fas fa-lock' : 'fas fa-exclamation-circle'"></i></span>
+                      <div class="flex-grow-1 min-width-0">
+                        <h6 class="text-sm mb-0 text-truncate">{{ u.nombres }} {{ u.apellido }}</h6>
+                        <p class="text-xxs text-muted mb-1">
+                          <span class="font-monospace">{{ u.codigo }}</span> ·
+                          <span :class="u.estado === 'Bloqueado' ? 'text-danger fw-bold' : 'text-warning fw-bold'">
+                            {{ u.estado === 'Bloqueado' ? 'Bloqueado' : `${u.intentos_fallidos} intento(s)` }}
+                          </span>
+                        </p>
+                        <button v-if="u.estado === 'Bloqueado' || u.intentos_fallidos > 0" class="btn btn-xs btn-outline-success me-1" @click="desbloquearUsuario(u)" :disabled="desbloqueandoId === u.id_usuario">
+                          <i :class="['fas', desbloqueandoId === u.id_usuario ? 'fa-spinner fa-spin' : 'fa-unlock']" class="me-1"></i>
+                          Desbloquear
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Resumen Semanal -->
+            <div class="col-lg-4">
+              <div class="detail-card h-100">
+                <div class="detail-card-header">
+                  <div class="d-flex align-items-center">
+                    <i class="fas fa-chart-line text-primary me-2"></i>
+                    <h6 class="mb-0">Resumen Semanal</h6>
+                  </div>
+                </div>
+                <div class="detail-card-body">
+                  <div v-if="resumenSemanal.length === 0" class="empty-state">
+                    <i class="fas fa-calendar"></i>
+                    <p class="mb-0">Sin datos en los últimos 7 días</p>
+                  </div>
+                  <div v-else>
+                    <div v-for="(d, i) in resumenSemanal" :key="i" class="week-row">
+                      <div class="d-flex justify-content-between mb-1">
+                        <span class="text-xs">{{ formatDiaSemana(d.dia) }}</span>
+                        <span class="text-xs font-weight-bold">{{ d.total }} accesos</span>
+                      </div>
+                      <div class="progress" style="height: 5px;">
+                        <div class="progress-bar bg-gradient-primary" :style="{ width: (d.total / maxSemanal * 100) + '%' }"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mensaje desbloqueo -->
+          <div v-if="msgDesbloqueo" class="alert alert-success alert-sm mt-3 mb-0 d-flex align-items-center" style="padding: 0.6rem 1rem;">
+            <i class="fas fa-check-circle me-2"></i>{{ msgDesbloqueo }}
+          </div>
+
+          <!-- Últimas Conexiones por Usuario -->
+          <div class="row mt-3">
+            <div class="col-12">
+              <div class="detail-card">
+                <div class="detail-card-header">
+                  <div class="d-flex align-items-center">
+                    <i class="fas fa-history text-info me-2"></i>
+                    <h6 class="mb-0">Últimas Conexiones por Usuario</h6>
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    <input
+                      v-model="filtroUltimos"
+                      type="text"
+                      class="form-control form-control-sm"
+                      placeholder="Buscar por nombre o código..."
+                      style="width: 240px;"
+                    />
+                    <select v-model="filtroRolUltimos" class="form-select form-select-sm" style="width: 150px;">
+                      <option value="">Todos los roles</option>
+                      <option value="Administrador">Administrador</option>
+                      <option value="Docente">Docente</option>
+                      <option value="Estudiante">Estudiante</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="detail-card-body" style="max-height: 400px;">
+                  <div v-if="ultimosAccesosFiltrados.length === 0" class="empty-state">
+                    <i class="fas fa-search"></i>
+                    <p class="mb-0">No hay usuarios que coincidan con el filtro</p>
+                  </div>
+                  <div v-else class="table-responsive">
+                    <table class="table table-sm align-items-center mb-0">
+                      <thead>
+                        <tr>
+                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Usuario</th>
+                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Rol</th>
+                          <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estado</th>
+                          <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 ps-2">Última conexión</th>
+                          <th class="text-end text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 pe-3">Hace</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="u in ultimosAccesosFiltrados" :key="u.id_usuario">
+                          <td class="ps-2">
+                            <div class="d-flex align-items-center">
+                              <div class="avatar-xs me-2 rounded-circle d-flex align-items-center justify-content-center" :class="'bg-gradient-' + getRolColor(u.rol)">
+                                <span class="text-white" style="font-size:9px;font-weight:700;">{{ u.nombres?.charAt(0) || '?' }}</span>
+                              </div>
+                              <div>
+                                <span class="text-xs font-weight-bold d-block">{{ u.nombres }} {{ u.apellido }}</span>
+                                <span class="text-xxs text-muted font-monospace">{{ u.codigo }}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span class="badge badge-sm" :class="'bg-gradient-' + getRolColor(u.rol)">{{ u.rol }}</span>
+                          </td>
+                          <td class="text-center">
+                            <span class="badge badge-sm" :class="u.estado === 'Activo' ? 'bg-gradient-info' : 'bg-gradient-danger'">{{ u.estado }}</span>
+                          </td>
+                          <td>
+                            <span v-if="u.ultimo_acceso" class="text-xs">
+                              {{ formatFecha(u.ultimo_acceso) }} <span class="text-muted">{{ formatHora(u.ultimo_acceso) }}</span>
+                            </span>
+                            <span v-else class="text-xs text-muted fst-italic">
+                              <i class="fas fa-minus-circle me-1"></i>Nunca
+                            </span>
+                          </td>
+                          <td class="text-end pe-3">
+                            <span v-if="u.ultimo_acceso" class="text-xxs" :class="haceClase(u.ultimo_acceso)">{{ haceTiempo(u.ultimo_acceso) }}</span>
+                            <span v-else class="text-xxs text-muted">—</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -250,6 +440,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import auditoriaService from '@/services/auditoria.service';
+import usuarioService from '@/services/usuario.service';
 
 // Tabs
 const activeTab = ref('estadisticas');
@@ -259,10 +450,59 @@ const tabs = [
 ];
 
 // Stats
-const stats = ref({ accesosHoy: 0, usuariosActivos: 0, cuentasBloqueadas: 0 });
+const stats = ref({
+  accesosHoy: 0,
+  accesosAyer: 0,
+  usuariosActivos: 0,
+  conectadosAhora: 0,
+  cuentasBloqueadas: 0,
+  intentosPendientes: 0,
+});
 const accesosPorRolData = ref([]);
 const accesosPorHoraData = ref([]);
 const resumenSemanal = ref([]);
+const accionesRecientes = ref([]);
+const intentosFallidos = ref([]);
+const desbloqueandoId = ref(null);
+const msgDesbloqueo = ref('');
+const ultimosAccesos = ref([]);
+const filtroUltimos = ref('');
+const filtroRolUltimos = ref('');
+
+const ultimosAccesosFiltrados = computed(() => {
+  let lista = ultimosAccesos.value;
+  if (filtroRolUltimos.value) {
+    lista = lista.filter(u => u.rol === filtroRolUltimos.value);
+  }
+  if (filtroUltimos.value) {
+    const q = filtroUltimos.value.toLowerCase();
+    lista = lista.filter(u =>
+      `${u.nombres} ${u.apellido}`.toLowerCase().includes(q) ||
+      (u.codigo || '').toLowerCase().includes(q)
+    );
+  }
+  return lista;
+});
+
+// Tendencia accesos vs ayer
+const tendencias = computed(() => ({
+  accesos: stats.value.accesosHoy - stats.value.accesosAyer,
+}));
+
+function trendCls(diff) {
+  if (diff > 0) return 'trend-up';
+  if (diff < 0) return 'trend-down';
+  return 'trend-flat';
+}
+function trendIcon(diff) {
+  if (diff > 0) return 'fas fa-arrow-up';
+  if (diff < 0) return 'fas fa-arrow-down';
+  return 'fas fa-minus';
+}
+function trendTxt(diff) {
+  if (diff === 0) return 'igual';
+  return (diff > 0 ? '+' : '') + diff;
+}
 
 // Table
 const registros = ref([]);
@@ -318,8 +558,11 @@ async function cargarStats() {
     const data = await auditoriaService.estadisticas();
     stats.value = {
       accesosHoy: data.accesosHoy,
+      accesosAyer: data.accesosAyer || 0,
       usuariosActivos: data.usuariosActivos,
+      conectadosAhora: data.conectadosAhora || 0,
       cuentasBloqueadas: data.cuentasBloqueadas,
+      intentosPendientes: data.intentosPendientes || 0,
     };
     accesosPorRolData.value = data.accesosPorRol || [];
     accesosPorHoraData.value = data.accesosPorHora || [];
@@ -331,6 +574,45 @@ async function cargarStats() {
     if (activeTab.value === 'estadisticas') renderCharts();
   } catch (err) {
     console.error('Error cargando stats:', err);
+  }
+}
+
+async function cargarAccionesRecientes() {
+  try {
+    accionesRecientes.value = await auditoriaService.accionesRecientes();
+  } catch (err) {
+    console.error('Error cargando acciones recientes:', err);
+  }
+}
+
+async function cargarIntentosFallidos() {
+  try {
+    intentosFallidos.value = await auditoriaService.intentosFallidos();
+  } catch (err) {
+    console.error('Error cargando intentos fallidos:', err);
+  }
+}
+
+async function cargarUltimosAccesos() {
+  try {
+    ultimosAccesos.value = await auditoriaService.ultimosAccesos();
+  } catch (err) {
+    console.error('Error cargando últimos accesos:', err);
+  }
+}
+
+async function desbloquearUsuario(u) {
+  desbloqueandoId.value = u.id_usuario;
+  msgDesbloqueo.value = '';
+  try {
+    await usuarioService.desbloquear(u.id_usuario);
+    msgDesbloqueo.value = `${u.nombres} ${u.apellido} desbloqueado correctamente.`;
+    await Promise.all([cargarStats(), cargarIntentosFallidos()]);
+    setTimeout(() => { msgDesbloqueo.value = ''; }, 4000);
+  } catch (err) {
+    msgDesbloqueo.value = err.response?.data?.error || 'No se pudo desbloquear el usuario.';
+  } finally {
+    desbloqueandoId.value = null;
   }
 }
 
@@ -403,7 +685,7 @@ async function exportarPDF() {
       body: datos.map(r => [
         formatFecha(r.fecha), formatHora(r.fecha), r.codigo,
         `${r.nombres} ${r.apellido}`, r.rol, r.accion,
-        r.metodo || '', r.ruta || '', r.ip || '',
+        r.metodo || '', r.ruta || '', formatIP(r.ip),
       ]),
       styles: { fontSize: 7, cellPadding: 2 },
       headStyles: { fillColor: [67, 56, 202], textColor: 255, fontSize: 7 },
@@ -422,7 +704,7 @@ async function exportarExcel() {
       'Fecha': formatFecha(r.fecha), 'Hora': formatHora(r.fecha),
       'Código': r.codigo, 'Nombres': r.nombres, 'Apellido': r.apellido,
       'Rol': r.rol, 'Acción': r.accion, 'Ruta': r.ruta || '',
-      'Método': r.metodo || '', 'IP': r.ip || '', 'Detalles': r.detalles || '',
+      'Método': r.metodo || '', 'IP': formatIP(r.ip), 'Detalles': r.detalles || '',
     }));
     const ws = XLSX.utils.json_to_sheet(wsData);
     ws['!cols'] = [
@@ -452,6 +734,43 @@ function getRolColor(rol) {
 }
 function getMetodoBadge(metodo) {
   return { GET: 'bg-gradient-info', POST: 'bg-gradient-success', PUT: 'bg-gradient-warning', DELETE: 'bg-gradient-danger' }[metodo] || 'bg-gradient-secondary';
+}
+
+function formatIP(ip) {
+  if (!ip) return '—';
+  // Loopback: ::1, 127.0.0.1, ::ffff:127.0.0.1
+  if (ip === '::1' || ip === '127.0.0.1' || ip === '::ffff:127.0.0.1') return 'localhost';
+  // IPv4-mapped IPv6 (::ffff:192.168.x.x) → mostrar solo IPv4
+  if (ip.startsWith('::ffff:')) return ip.slice(7);
+  return ip;
+}
+
+function haceTiempo(fecha) {
+  if (!fecha) return '';
+  const ahora = new Date();
+  const f = new Date(fecha);
+  const segs = Math.floor((ahora - f) / 1000);
+  if (segs < 60) return 'hace segundos';
+  const mins = Math.floor(segs / 60);
+  if (mins < 60) return `hace ${mins} min`;
+  const horas = Math.floor(mins / 60);
+  if (horas < 24) return `hace ${horas} h`;
+  const dias = Math.floor(horas / 24);
+  if (dias < 7) return `hace ${dias} d`;
+  const semanas = Math.floor(dias / 7);
+  if (semanas < 5) return `hace ${semanas} sem`;
+  const meses = Math.floor(dias / 30);
+  if (meses < 12) return `hace ${meses} m`;
+  return `hace ${Math.floor(dias / 365)} a`;
+}
+
+function haceClase(fecha) {
+  if (!fecha) return 'text-muted';
+  const segs = Math.floor((new Date() - new Date(fecha)) / 1000);
+  if (segs < 3600) return 'text-success fw-bold';      // < 1h
+  if (segs < 86400) return 'text-info fw-bold';        // < 1d
+  if (segs < 604800) return 'text-secondary';          // < 1 sem
+  return 'text-muted';
 }
 
 // Charts
@@ -503,6 +822,9 @@ function renderCharts() {
 onMounted(() => {
   cargarStats();
   cargarRegistros();
+  cargarAccionesRecientes();
+  cargarIntentosFallidos();
+  cargarUltimosAccesos();
 });
 </script>
 
@@ -581,6 +903,76 @@ onMounted(() => {
 .glow-data { display: flex; flex-direction: column; }
 .glow-num { font-size: 1.6rem; font-weight: 800; color: #fff; line-height: 1.1; }
 .glow-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; color: rgba(255,255,255,0.8); margin-top: 2px; }
+.glow-trend { font-size: 0.65rem; color: rgba(255,255,255,0.85); margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+.glow-trend i { font-size: 0.6rem; }
+.trend-up i { color: #d1fae5; }
+.trend-down i { color: #fecaca; }
+.trend-flat i { color: rgba(255,255,255,0.6); }
+.pulse-dot { animation: pulse-dot 1.5s ease-in-out infinite; color: #34d399; }
+@keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.85); } }
+
+/* Detail cards */
+.detail-card {
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 14px; overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.detail-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(99, 102, 241, 0.1); }
+.detail-card-header {
+  padding: 14px 16px; border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.detail-card-header h6 { font-size: 0.85rem; font-weight: 700; color: #1e293b; }
+.detail-card-body { padding: 12px 16px; max-height: 300px; overflow-y: auto; }
+.alert-row {
+  display: flex; align-items: flex-start; padding: 10px;
+  background: rgba(245, 54, 92, 0.03); border-radius: 8px;
+  margin-bottom: 8px;
+}
+.alert-row:last-child { margin-bottom: 0; }
+
+/* Timeline */
+.timeline {
+  list-style: none; padding: 0; margin: 0; position: relative;
+}
+.timeline::before {
+  content: ''; position: absolute; left: 7px; top: 4px; bottom: 4px;
+  width: 2px; background: #e2e8f0;
+}
+.timeline-item {
+  position: relative; padding-left: 26px; padding-bottom: 14px;
+}
+.timeline-item:last-child { padding-bottom: 0; }
+.timeline-dot {
+  position: absolute; left: 0; top: 4px;
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px #e2e8f0;
+}
+.timeline-dot.bg-primary { background: #5e72e4; }
+.timeline-dot.bg-info { background: #11cdef; }
+.timeline-dot.bg-success { background: #2dce89; }
+.timeline-dot.bg-secondary { background: #94a3b8; }
+.timeline-content { font-size: 0.8rem; }
+.alert-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgba(245, 54, 92, 0.1); color: #ef4444;
+  display: flex; align-items: center; justify-content: center;
+  margin-right: 10px; flex-shrink: 0; font-size: 0.8rem;
+}
+.btn-xs {
+  padding: 0.2rem 0.6rem; font-size: 0.7rem;
+  line-height: 1.4; border-radius: 0.4rem;
+}
+.min-width-0 { min-width: 0; }
+.empty-state {
+  text-align: center; padding: 24px 16px;
+  color: #94a3b8;
+}
+.empty-state i { font-size: 1.8rem; opacity: 0.3; display: block; margin-bottom: 8px; }
+.empty-state p { font-size: 0.8rem; margin: 0; }
+.week-row { margin-bottom: 12px; }
+.week-row:last-child { margin-bottom: 0; }
 
 /* Export Dropdown */
 .export-dropdown {

@@ -19,5 +19,6 @@ router.post('/usuarios', verificarPermiso('usuarios', 'crear'), registrarAcceso(
 router.put('/usuarios/:id', verificarPermiso('usuarios', 'editar'), registrarAcceso('Actualizar usuario'), usuarioController.actualizar);
 router.delete('/usuarios/:id', verificarPermiso('usuarios', 'eliminar'), registrarAcceso('Eliminar usuario'), usuarioController.eliminar);
 router.put('/usuarios/:id/rol', verificarPermiso('roles', 'editar'), registrarAcceso('Asignar rol'), usuarioController.asignarRol);
+router.put('/usuarios/:id/desbloquear', verificarPermiso('usuarios', 'editar'), registrarAcceso('Desbloquear usuario'), usuarioController.desbloquear);
 
 module.exports = router;

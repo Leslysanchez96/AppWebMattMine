@@ -52,6 +52,18 @@ async function bloquearCuenta(idUsuario) {
     );
 }
 
+// Desbloquear cuenta: estado Activo + reset de intentos
+async function desbloquearCuenta(idUsuario) {
+    const result = await db.query(
+        `UPDATE usuario
+         SET estado = 'Activo', intentos_fallidos = 0
+         WHERE id_usuario = $1
+         RETURNING id_usuario, codigo, estado, intentos_fallidos`,
+        [idUsuario]
+    );
+    return result.rows[0] || null;
+}
+
 // Actualizar password
 async function updatePassword(idUsuario, hashedPassword) {
     await db.query(
@@ -68,10 +80,20 @@ async function updateEstado(idUsuario, estado) {
     );
 }
 
-// Obtener info de cuenta del usuario logueado
+// Obtener info de cuenta del usuario logueado (incluye aula si es Estudiante)
 async function getInfoCuenta(idUsuario) {
     const result = await db.query(
-        'SELECT id_usuario, codigo, dni, nombres, apellido, correo, rol, estado, avatar, ultimo_acceso, fecha_creacion FROM usuario WHERE id_usuario = $1',
+        `SELECT u.id_usuario, u.codigo, u.dni, u.nombres, u.apellido, u.correo,
+                u.rol, u.estado, u.avatar, u.ultimo_acceso, u.fecha_creacion,
+                CASE
+                    WHEN u.rol = 'Estudiante' AND a.id_aula IS NOT NULL
+                    THEN CONCAT(a.grado, a.seccion, ' — ', a.anio)
+                    ELSE NULL
+                END AS aula
+         FROM usuario u
+         LEFT JOIN estudiante e ON u.id_usuario = e.id_usuario
+         LEFT JOIN aula a ON e.id_aula = a.id_aula
+         WHERE u.id_usuario = $1`,
         [idUsuario]
     );
     return result.rows[0] || null;
@@ -239,6 +261,7 @@ module.exports = {
     incrementarIntentos,
     loginExitoso,
     bloquearCuenta,
+    desbloquearCuenta,
     updatePassword,
     updateEstado,
     getInfoCuenta,

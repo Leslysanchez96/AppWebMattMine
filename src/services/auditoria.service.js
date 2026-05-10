@@ -11,6 +11,21 @@ export default {
         return response.data;
     },
 
+    async accionesRecientes(limit = 10) {
+        const response = await api.get('/auditoria/acciones-recientes', { params: { limit } });
+        return response.data;
+    },
+
+    async intentosFallidos() {
+        const response = await api.get('/auditoria/intentos-fallidos');
+        return response.data;
+    },
+
+    async ultimosAccesos(limit = 50) {
+        const response = await api.get('/auditoria/ultimos-accesos', { params: { limit } });
+        return response.data;
+    },
+
     exportarCSV(params = {}) {
         const query = new URLSearchParams({ ...params, formato: 'csv' }).toString();
         const token = localStorage.getItem('token');

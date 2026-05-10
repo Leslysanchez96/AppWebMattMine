@@ -1,6 +1,13 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
+import { useStore } from "vuex";
 import usuarioService from "@/services/usuario.service";
+import { mascararDni, mascararCorreo } from "@/utils/mask";
+
+const authStore = useStore();
+const esAdmin = computed(() => authStore.getters["auth/userRole"] === "Administrador");
+const verDni = (dni) => esAdmin.value ? dni : mascararDni(dni);
+const verCorreo = (correo) => esAdmin.value ? correo : mascararCorreo(correo);
 
 const usuarios = ref([]);
 const total = ref(0);
@@ -381,13 +388,13 @@ onMounted(() => { cargarUsuarios(); cargarStats(); });
                   </div>
                 </td>
                 <td class="px-3 text-center">
-                  <span class="text-sm text-secondary" style="white-space: nowrap;">{{ u.correo || 'Sin correo' }}</span>
+                  <span class="text-sm text-secondary" style="white-space: nowrap;">{{ u.correo ? verCorreo(u.correo) : 'Sin correo' }}</span>
                 </td>
                 <td class="px-3 text-center">
                   <span class="text-sm font-weight-bold">{{ u.codigo }}</span>
                 </td>
                 <td class="px-3 text-center">
-                  <span class="text-sm text-secondary">{{ u.dni }}</span>
+                  <span class="text-sm text-secondary">{{ verDni(u.dni) }}</span>
                 </td>
                 <td class="px-3 text-center">
                   <span class="badge" :class="rolBadgeClass(u.rol)">

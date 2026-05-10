@@ -7,6 +7,9 @@ const { verificarPermiso } = require('../middlewares/permiso.middleware');
 router.use(verificarToken);
 
 router.get('/estadisticas', verificarPermiso('auditoria', 'ver'), auditoriaController.estadisticas);
+router.get('/acciones-recientes', verificarPermiso('auditoria', 'ver'), auditoriaController.accionesRecientes);
+router.get('/intentos-fallidos', verificarPermiso('auditoria', 'ver'), auditoriaController.intentosFallidos);
+router.get('/ultimos-accesos', verificarPermiso('auditoria', 'ver'), auditoriaController.ultimosAccesos);
 router.get('/exportar', verificarPermiso('auditoria', 'ver'), auditoriaController.exportar);
 router.get('/', verificarPermiso('auditoria', 'ver'), auditoriaController.listar);
 

@@ -95,14 +95,29 @@ async function obtenerEstadisticas() {
         `SELECT COUNT(*) FROM auditoria_acceso WHERE fecha::date = CURRENT_DATE`
     );
 
+    // Accesos ayer (para mostrar tendencia)
+    const accesosAyer = await db.query(
+        `SELECT COUNT(*) FROM auditoria_acceso WHERE fecha::date = CURRENT_DATE - INTERVAL '1 day'`
+    );
+
     // Usuarios activos (con acceso en las últimas 24h)
     const usuariosActivos = await db.query(
         `SELECT COUNT(DISTINCT id_usuario) FROM auditoria_acceso WHERE fecha >= NOW() - INTERVAL '24 hours'`
     );
 
+    // Usuarios conectados ahora (acceso en últimos 5 min)
+    const conectadosAhora = await db.query(
+        `SELECT COUNT(DISTINCT id_usuario) FROM auditoria_acceso WHERE fecha >= NOW() - INTERVAL '5 minutes'`
+    );
+
     // Cuentas bloqueadas
     const cuentasBloqueadas = await db.query(
         `SELECT COUNT(*) FROM usuario WHERE estado = 'Bloqueado'`
+    );
+
+    // Usuarios con intentos fallidos pendientes (no bloqueados todavía)
+    const intentosPendientes = await db.query(
+        `SELECT COUNT(*) FROM usuario WHERE intentos_fallidos > 0 AND estado = 'Activo'`
     );
 
     // Accesos por rol (hoy)
@@ -135,12 +150,54 @@ async function obtenerEstadisticas() {
 
     return {
         accesosHoy: parseInt(accesosHoy.rows[0].count),
+        accesosAyer: parseInt(accesosAyer.rows[0].count),
         usuariosActivos: parseInt(usuariosActivos.rows[0].count),
+        conectadosAhora: parseInt(conectadosAhora.rows[0].count),
         cuentasBloqueadas: parseInt(cuentasBloqueadas.rows[0].count),
+        intentosPendientes: parseInt(intentosPendientes.rows[0].count),
         accesosPorRol: accesosPorRol.rows,
         accesosPorHora: accesosPorHora.rows,
         resumenSemanal: resumenSemanal.rows,
     };
+}
+
+// Acciones recientes: timeline de las últimas N acciones del sistema
+async function obtenerAccionesRecientes({ limit = 10 } = {}) {
+    const result = await db.query(
+        `SELECT a.id_auditoria, a.accion, a.metodo, a.fecha,
+                u.id_usuario, u.codigo, u.nombres, u.apellido, u.rol
+         FROM auditoria_acceso a
+         JOIN usuario u ON a.id_usuario = u.id_usuario
+         ORDER BY a.fecha DESC
+         LIMIT $1`,
+        [limit]
+    );
+    return result.rows;
+}
+
+// Última conexión por usuario (todos los activos/bloqueados)
+async function obtenerUltimosAccesos({ limit = 50 } = {}) {
+    const result = await db.query(
+        `SELECT id_usuario, codigo, nombres, apellido, rol, estado, ultimo_acceso
+         FROM usuario
+         WHERE estado IN ('Activo', 'Bloqueado')
+         ORDER BY ultimo_acceso DESC NULLS LAST
+         LIMIT $1`,
+        [limit]
+    );
+    return result.rows;
+}
+
+// Intentos fallidos recientes: usuarios con intentos pendientes o cuentas bloqueadas
+async function obtenerIntentosFallidos() {
+    const result = await db.query(
+        `SELECT id_usuario, codigo, nombres, apellido, rol, estado, intentos_fallidos
+         FROM usuario
+         WHERE (intentos_fallidos > 0 AND estado = 'Activo') OR estado = 'Bloqueado'
+         ORDER BY estado DESC, intentos_fallidos DESC
+         LIMIT 10`
+    );
+    return result.rows;
 }
 
 module.exports = {
@@ -148,4 +205,7 @@ module.exports = {
     obtenerRegistros,
     obtenerParaExportar,
     obtenerEstadisticas,
+    obtenerAccionesRecientes,
+    obtenerIntentosFallidos,
+    obtenerUltimosAccesos,
 };
